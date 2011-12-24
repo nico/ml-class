@@ -11,17 +11,16 @@ s = """\
 |hi|  |  |in|  |  | t|  |  |  |  |ye|  |ar|  |s |  |  |. |"""
 
 def foldlines(cols):
-    return [''.join(l) for l in zip(*cols)]
+    return map(''.join, zip(*cols))
 
 class Pdist(dict):
     def __init__(self):
         for line in open('count_1w.txt'):
-            key,count = line.split('\t')
+            key, count = line.split('\t')
             self[key] = int(count)
         self.N = float(sum(self.itervalues()))
     def __call__(self, key): 
-        if key in self: return self[key]/self.N  
-        else: return 1./self.N
+        return self.get(key, 1) / self.N # Not exactly Laplace smoothing
 Pw = Pdist()
 
 Words = re.compile('[a-z]+')
@@ -33,11 +32,11 @@ def Pcol(cols):
     return sum([Pline(line.lower()) for line in foldlines(cols)])
 
 def segment(startelts, cols):
-    if not cols: return []
-    candidates = itertools.permutations(cols, min(4, len(cols)))
-    start = list(max(candidates, key=lambda c: Pcol(startelts + list(c))))
-    return start + segment(start, set(cols) - set(start))
+    if not cols: return startelts
+    candidates = map(list, itertools.permutations(cols, min(2, len(cols))))
+    start = max(candidates, key=lambda c: Pcol(startelts + c))
+    return segment(startelts + start, set(cols) - set(start))
 
 if __name__ == '__main__':
-    columns = zip(*[w.strip('|').split('|') for w in s.splitlines()])
+    columns = zip(*[w.split('|') for w in s.splitlines()])
     print '\n'.join(foldlines(segment([], columns)))  # -> 1948
